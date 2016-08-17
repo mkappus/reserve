@@ -19,25 +19,17 @@ type (
 	bucket struct {
 		name []byte
 		st   Storer
+		vals []Storer
 	}
 
 	Store struct {
 		db     *bolt.DB
 		bucket *bucket
 	}
-
-	Getr interface {
-		Get(Key) Storer
-	}
-
-	Setr interface {
-		Set(Key, Storer) error
-	}
 )
 
 var db *bolt.DB
 
-// TODO: Set timeout
 func getDB() (*bolt.DB, error) {
 	if db != nil {
 		return db, nil
@@ -56,6 +48,7 @@ func makeBucket(db *bolt.DB, name []byte) error {
 		return err
 	}
 	return tx.Commit()
+
 }
 
 func New(bucketName string, st Storer) (*Store, error) {
@@ -107,4 +100,18 @@ func (s *Store) Create(st Storer) (k Key, err error) {
 	return k, tx.Commit()
 }
 
-// TODO READ, UPDATE, DELETE
+func (s *Store) Read(k Key) (Storer, error) {
+	var data []byte
+	err := s.db.View(func(tx *bolt.Tx) error {
+		data = tx.Bucket(s.bucket.name).Get(k)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = s.bucket.st.UnmarshalBinary(data)
+	return s.bucket.st, nil
+}
+
+func (s *Store) readAll
+		
