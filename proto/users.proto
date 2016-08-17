@@ -1,0 +1,25 @@
+syntax = "proto3";
+package users;
+
+message Teacher {
+  uint64 id = 1;
+  string name = 2;
+  string email = 3;
+  string password = 4;
+}
+
+message Student {
+  uint64 id = 1;
+  string name = 2;
+  string email = 3;
+  string password = 4;
+}
+
+message Course{
+  uint64 id = 1;
+
+  Teacher teacher = 2;
+  //map<uint64, Student > students = 3;
+  repeated Student students = 3;
+}
+
