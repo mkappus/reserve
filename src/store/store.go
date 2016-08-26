@@ -19,12 +19,11 @@ type (
 	bucket struct {
 		name []byte
 		st   Storer
-		vals []Storer
 	}
 
 	Store struct {
-		db     *bolt.DB
-		bucket *bucket
+		db      *bolt.DB
+		buckets map[string]*bucket
 	}
 )
 
@@ -36,6 +35,18 @@ func getDB() (*bolt.DB, error) {
 	}
 
 	return bolt.Open("madison.db", 0600, nil)
+}
+
+func Open(path string, mode int) (*Store, error) {
+	var err error
+	db, err = bolt.Open(path, mode, nil)
+	if err != nil {
+		return nil, error
+	}
+	return &Store{
+		db:      db,
+		buckets: make(map[string]string),
+	}, nil
 }
 
 func makeBucket(db *bolt.DB, name []byte) error {
@@ -51,24 +62,19 @@ func makeBucket(db *bolt.DB, name []byte) error {
 
 }
 
-func New(bucketName string, st Storer) (*Store, error) {
-	db, err := getDB()
-	if err != nil {
-		return nil, err
-	}
-	bn := []byte(bucketName)
-
-	if err = makeBucket(db, bn); err != nil {
-		return nil, err
+func (s Store) NewBucket(bucketName string, st Storer) error {
+	if err = makeBucket(s.db, bn); err != nil {
+		return err
 	}
 
-	return &Store{
+	store.buckets[bucketName] = &bucket{
 		db: db,
 		bucket: &bucket{
-			name: bn,
+			name: []byte(bucketName),
 			st:   st,
 		},
-	}, nil
+	}
+	return nil
 }
 
 // Proto object ids are uint64
@@ -100,7 +106,7 @@ func (s *Store) Create(st Storer) (k Key, err error) {
 	return k, tx.Commit()
 }
 
-func (s *Store) Read(k Key) (Storer, error) {
+func (s *Store) Read(k Key, bucket string) (Storer, error) {
 	var data []byte
 	err := s.db.View(func(tx *bolt.Tx) error {
 		data = tx.Bucket(s.bucket.name).Get(k)
@@ -113,5 +119,23 @@ func (s *Store) Read(k Key) (Storer, error) {
 	return s.bucket.st, nil
 }
 
-func (s *Store) readAll
-		
+func (s *Store) ReadAll(bucket string) (all []Storer, err error) {
+	var data []byte
+
+	b := s.buckets[bucket]
+	s.db.View(func(tx *bolt.Tx) {
+		bucket := s.db.Bucket(b.name)
+		c := bucket.Cursor()
+		for k, v := c.First(); k != nil; k, v := c.Next() {
+			err = b.st.MarshalBinary(v)
+			if err != nil {
+				continue
+			}
+			all = append(out, st)
+			b.st = nil
+		}
+		return nil
+	})
+
+	return out, nil
+}

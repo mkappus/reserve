@@ -41,8 +41,3 @@ func (c *Course) MarshalBinary() ([]byte, error) {
 func (c *Course) UnmarshalBinary(data []byte) error {
 	return proto.Unmarshal(data, c)
 }
-
-func NewStore(name string) (*UserStore, error) {
-	store, err := store.New(name, new(Student))
-	return &UserStore{store}, err
-}
